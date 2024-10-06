@@ -28,7 +28,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.*
-import java.io.IOException
+import okio.ByteString
 
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -44,7 +44,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
 
@@ -70,35 +74,48 @@ fun Greeting(
 ) {
     var latitude by remember { mutableStateOf<Double?>(null) }
     var longitude by remember { mutableStateOf<Double?>(null) }
-    var isSending by remember { mutableStateOf(false) } // State for sending data
+    var rsrp by remember { mutableStateOf<Int?>(null) }
+    var isSending by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
     val client = remember { OkHttpClient() }
-    val request = Request.Builder().url("ws://localhost:8181").build()
-    var webSocket: WebSocket? = remember { client.newWebSocket(request, object : WebSocketListener() {
-        override fun onOpen(webSocket: WebSocket, response: Response) {
-            // WebSocket opened
-        }
+    val request = Request.Builder().url("https://4lagwc-2-63-201-51.ru.tuna.am ").build()
+    var webSocket: WebSocket? = remember {
+        client.newWebSocket(request, object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                println("WebSocket opened")
+            }
 
-        override fun onMessage(webSocket: WebSocket, text: String) {
-            // Message received
-        }
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                println("Message received: $text")
+            }
 
-        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-            // Handle failure
-        }
-    }) }
+            override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+                println("Message received: ${bytes.hex()}")
+            }
 
-    // Function to send location data
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                println("Closing WebSocket: $code $reason")
+                webSocket.close(1000, null)
+            }
+
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                println("WebSocket failure: ${t.message}")
+            }
+        })
+    }
+
     fun sendLocationData() {
         latitude?.let { lat ->
             longitude?.let { lon ->
-                val jsonData = """{"latitude": $lat, "longitude": $lon}"""
-                webSocket?.send(jsonData)
+                rsrp?.let { rsrpValue ->
+                    val jsonData = """{"rsrp": $rsrpValue, "lat": $lat, "lon": $lon}"""
+                    webSocket?.send(jsonData)
+                }
             }
         }
     }
 
-    // Get location
     fun getLocation() {
         if (ActivityCompat.checkSelfPermission(
                 context,
@@ -109,18 +126,18 @@ fun Greeting(
                 if (location != null) {
                     latitude = location.latitude
                     longitude = location.longitude
+                    rsrp = -85 // Example value - replace with your logic
                 }
             }
         }
     }
 
-    // Start sending data every 5 seconds
     fun startSendingData() {
         isSending = true
         GlobalScope.launch {
             while (isSending) {
                 sendLocationData()
-                delay(5000) // Wait for 5 seconds
+                delay(5000)
             }
         }
     }
@@ -168,9 +185,9 @@ fun Greeting(
         }
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = {
-            getLocation() // Get location on each press
+            getLocation()
             if (!isSending) {
-                startSendingData() // Start sending data every 5 seconds
+                startSendingData()
             }
         }) {
             Text(text = "Start Sending Coordinates")
