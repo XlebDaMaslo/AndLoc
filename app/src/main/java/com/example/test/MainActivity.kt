@@ -36,14 +36,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Needed to get last known location
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        // Request permissions to access geolocation
         val requestPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-                if (isGranted) {
-                    // Permission granted
+                if (isGranted) { // Permission granted
+                    null
                 }
             }
 
+        // Checking permissions to access precise geolocation
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -52,8 +55,10 @@ class MainActivity : ComponentActivity() {
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
 
+        // Application will adapt to full screen mode
         enableEdgeToEdge()
 
+        // Customizing and displaying the user interface
         setContent {
             TestTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -78,8 +83,10 @@ fun Greeting(
     var isSending by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
+    // Creating an OkHttp client to work with WebSocket
     val client = remember { OkHttpClient() }
     val request = Request.Builder().url("https://4lagwc-2-63-201-51.ru.tuna.am ").build()
+    // WebSocket Initialization
     var webSocket: WebSocket? = remember {
         client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
@@ -105,10 +112,12 @@ fun Greeting(
         })
     }
 
+    // Sending geolocation data to the server via WebSocket
     fun sendLocationData() {
         latitude?.let { lat ->
             longitude?.let { lon ->
                 rsrp?.let { rsrpValue ->
+                    // JSON string with geolocation data
                     val jsonData = """{"rsrp": $rsrpValue, "lat": $lat, "lon": $lon}"""
                     webSocket?.send(jsonData)
                 }
@@ -116,22 +125,26 @@ fun Greeting(
         }
     }
 
+    // Getting the current geolocation of the device
     fun getLocation() {
+        // Checking for Permissions
         if (ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
+            // Getting location
             fusedLocationClient?.lastLocation?.addOnSuccessListener { location ->
                 if (location != null) {
                     latitude = location.latitude
                     longitude = location.longitude
-                    rsrp = -85 // Example value - replace with your logic
+                    rsrp = 0
                 }
             }
         }
     }
 
+    // Start sending data with a period of 5 seconds
     fun startSendingData() {
         isSending = true
         GlobalScope.launch {
@@ -142,15 +155,18 @@ fun Greeting(
         }
     }
 
+    // User interface
     Column(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Row to display latitude and longitude
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
+            // Column for displaying latitude
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -167,6 +183,7 @@ fun Greeting(
                 }
             }
             Spacer(modifier = Modifier.width(16.dp))
+            // Column for displaying longitude
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -184,6 +201,7 @@ fun Greeting(
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
+        // Button to start receiving location and sending data
         Button(onClick = {
             getLocation()
             if (!isSending) {
