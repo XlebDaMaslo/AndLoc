@@ -1,5 +1,5 @@
 // CellInfoAct.kt
-package com.example.test.network
+package com.example.test
 
 import android.annotation.SuppressLint
 import android.content.Context

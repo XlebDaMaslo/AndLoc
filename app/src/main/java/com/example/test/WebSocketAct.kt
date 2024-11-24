@@ -4,7 +4,7 @@ import android.content.Context
 import okhttp3.*
 import okio.ByteString
 import com.example.test.location.LocationAct
-import com.example.test.network.CellInfoAct
+import com.example.test.CellInfoAct
 
 class WebSocketAct(private val context: Context) {
     private val client = OkHttpClient()

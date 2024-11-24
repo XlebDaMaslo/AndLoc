@@ -13,7 +13,6 @@ import com.example.test.location.LocationAct
 import com.example.test.network.WebSocketAct
 import com.example.test.ui.Interface
 import com.google.android.gms.location.LocationServices
-import com.example.test.network.CellInfoAct
 
 class MainActivity : ComponentActivity() {
     private lateinit var locationAct: LocationAct
