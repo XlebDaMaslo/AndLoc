@@ -17,7 +17,6 @@ class LocationAct(
     val latitude = MutableStateFlow<Double?>(null)
     val longitude = MutableStateFlow<Double?>(null)
 
-    // Получение последней известной локации (одиночный запрос)
     fun getLocation() {
         if (ActivityCompat.checkSelfPermission(
                 context,
@@ -33,10 +32,8 @@ class LocationAct(
         }
     }
 
-    // Обновление геолокации в реальном времени
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
-            // Удаляем вызов super.onLocationResult(locationResult), т.к. он не нужен
             locationResult.lastLocation?.let { location ->
                 latitude.value = location.latitude
                 longitude.value = location.longitude
@@ -44,11 +41,9 @@ class LocationAct(
         }
     }
 
-    // Запуск обновления координат
     fun startLocationUpdates() {
         val locationRequest = LocationRequest.create().apply {
-            interval = 5000 // Интервал обновлений 5 секунд
-            fastestInterval = 3000 // Самый быстрый интервал (для оптимизации)
+            interval = 5000 // 5 sec
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         }
 
@@ -61,7 +56,6 @@ class LocationAct(
         }
     }
 
-    // Остановка обновлений координат
     fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }

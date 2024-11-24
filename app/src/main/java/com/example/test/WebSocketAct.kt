@@ -8,7 +8,7 @@ import com.example.test.network.CellInfoAct
 
 class WebSocketAct(private val context: Context) {
     private val client = OkHttpClient()
-    private val request = Request.Builder().url("https://hzforl-2a01-620-c199-8d01-3421-fb9a-ee61-ea46.ru.tuna.am ").build() // Замените на ваш URL
+    private val request = Request.Builder().url("https://hzforl-2a01-620-c199-8d01-3421-fb9a-ee61-ea46.ru.tuna.am ").build() // URL
     private var webSocket: WebSocket? = null
     private val cellInfoAct = CellInfoAct(context)
 
@@ -37,7 +37,6 @@ class WebSocketAct(private val context: Context) {
         })
     }
 
-    // Отправка данных геолокации и RSRP на сервер через WebSocket
     fun sendLocationData(locationAct: LocationAct) {
         val latitude = locationAct.latitude.value
         val longitude = locationAct.longitude.value

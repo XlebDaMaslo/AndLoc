@@ -25,8 +25,7 @@ class MainActivity : ComponentActivity() {
 
         // Needed to get last known location
         locationAct = LocationAct(this, LocationServices.getFusedLocationProviderClient(this))
-        webSocketAct = WebSocketAct(this) // Передаем контекст
-
+        webSocketAct = WebSocketAct(this)
 
         // Request permissions to access geolocation
         val requestPermissionLauncher =

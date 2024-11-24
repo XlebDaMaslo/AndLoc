@@ -31,9 +31,9 @@ fun Interface(
         isSending = true
         lifecycleOwner.lifecycleScope.launch {
             while (isSending) {
-                locationAct.getLocation()  // Запрос последней известной локации
-                webSocketAct.sendLocationData(locationAct) // Отправляем данные
-                delay(5000) // Пауза 5 секунд перед следующим обновлением
+                locationAct.getLocation()
+                webSocketAct.sendLocationData(locationAct)
+                delay(5000)
             }
         }
     }
@@ -51,7 +51,7 @@ fun Interface(
         Spacer(modifier = Modifier.height(16.dp))
         // Button to start receiving location and sending data
         Button(onClick = {
-            locationAct.startLocationUpdates() // Запускаем обновление координат
+            locationAct.startLocationUpdates()
             if (!isSending) {
                 startSendingData()
             }

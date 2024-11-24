@@ -12,7 +12,6 @@ class CellInfoAct(private val context: Context) {
         val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
         val cellInfo = telephonyManager.allCellInfo
 
-        // Находим информацию о LTE ячейке
         val cellInfoLte = cellInfo?.find { it is CellInfoLte } as? CellInfoLte
 
         return cellInfoLte?.cellSignalStrength?.rsrp
