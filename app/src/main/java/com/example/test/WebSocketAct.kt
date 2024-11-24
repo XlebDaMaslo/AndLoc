@@ -1,14 +1,17 @@
 package com.example.test.network
 
+import android.content.Context
 import okhttp3.*
 import okio.ByteString
+import com.example.test.location.LocationAct
+import com.example.test.network.CellInfoAct
 
-class WebSocketAct {
+class WebSocketAct(private val context: Context) {
     private val client = OkHttpClient()
-    private val request = Request.Builder().url("https://0yzyb4-2a01-620-c199-8d01-7d67-7da-7165-a1b8.ru.tuna.am").build()
+    private val request = Request.Builder().url("https://hzforl-2a01-620-c199-8d01-3421-fb9a-ee61-ea46.ru.tuna.am ").build() // Замените на ваш URL
     private var webSocket: WebSocket? = null
+    private val cellInfoAct = CellInfoAct(context)
 
-    // WebSocket Initialization
     init {
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
@@ -34,25 +37,15 @@ class WebSocketAct {
         })
     }
 
-    // Sending geolocation data to the server via WebSocket
-    fun sendLocationData(
-        latitude: Double?,
-        longitude: Double?,
-        rsrp: Int?,
-        cellId: Int?,
-        lac: Int?,
-        cellType: String?
-    ) {
-        val jsonData = """
-            {
-                "latitude": $latitude,
-                "longitude": $longitude,
-                "rsrp": $rsrp,
-                "cellId": $cellId,
-                "lac": $lac,
-                "cellType": "$cellType"
-            }
-        """.trimIndent()
-        webSocket?.send(jsonData)
+    // Отправка данных геолокации и RSRP на сервер через WebSocket
+    fun sendLocationData(locationAct: LocationAct) {
+        val latitude = locationAct.latitude.value
+        val longitude = locationAct.longitude.value
+        val rsrp = cellInfoAct.getRsrp()
+
+        if (latitude != null && longitude != null && rsrp != null) {
+            val jsonData = """{"rsrp": $rsrp, "lat": $latitude, "lon": $longitude}"""
+            webSocket?.send(jsonData)
+        }
     }
 }
