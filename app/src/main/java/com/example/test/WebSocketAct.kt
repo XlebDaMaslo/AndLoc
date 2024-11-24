@@ -5,7 +5,7 @@ import okio.ByteString
 
 class WebSocketAct {
     private val client = OkHttpClient()
-    private val request = Request.Builder().url("https://wrwyjs-104-28-244-75.ru.tuna.am").build()
+    private val request = Request.Builder().url("https://0yzyb4-2a01-620-c199-8d01-7d67-7da-7165-a1b8.ru.tuna.am").build()
     private var webSocket: WebSocket? = null
 
     // WebSocket Initialization
@@ -35,14 +35,24 @@ class WebSocketAct {
     }
 
     // Sending geolocation data to the server via WebSocket
-    fun sendLocationData(latitude: Double?, longitude: Double?, rsrp: Int?) {
-        latitude?.let { lat ->
-            longitude?.let { lon ->
-                rsrp?.let { rsrpValue ->
-                    val jsonData = """{"rsrp": $rsrpValue, "lat": $lat, "lon": $lon}"""
-                    webSocket?.send(jsonData)
-                }
+    fun sendLocationData(
+        latitude: Double?,
+        longitude: Double?,
+        rsrp: Int?,
+        cellId: Int?,
+        lac: Int?,
+        cellType: String?
+    ) {
+        val jsonData = """
+            {
+                "latitude": $latitude,
+                "longitude": $longitude,
+                "rsrp": $rsrp,
+                "cellId": $cellId,
+                "lac": $lac,
+                "cellType": "$cellType"
             }
-        }
+        """.trimIndent()
+        webSocket?.send(jsonData)
     }
 }

@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.test.cellinfo.CellInfoAct
 import com.example.test.location.LocationAct
 import com.example.test.network.WebSocketAct
 import kotlinx.coroutines.delay
@@ -22,29 +23,32 @@ fun Interface(
     modifier: Modifier = Modifier,
     locationAct: LocationAct,
     webSocketAct: WebSocketAct,
+    cellInfoAct: CellInfoAct,
     lifecycleOwner: LifecycleOwner
 ) {
     var isSending by remember { mutableStateOf(false) }
 
-    // Start sending data with a period of 5 seconds
     fun startSendingData() {
         isSending = true
         lifecycleOwner.lifecycleScope.launch {
             while (isSending) {
-                // Get up-to-date placement data before sending
                 locationAct.getLocation()
+                cellInfoAct.getCellInfo()
 
                 webSocketAct.sendLocationData(
                     latitude = locationAct.latitude.value,
                     longitude = locationAct.longitude.value,
-                    rsrp = locationAct.rsrp.value
+                    rsrp = cellInfoAct.rsrp.value,
+                    cellId = cellInfoAct.cellId.value,
+                    lac = cellInfoAct.lac.value,
+                    cellType = cellInfoAct.cellType.value
                 )
                 delay(5000)
             }
         }
     }
 
-    // User interface
+
     Column(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -55,14 +59,21 @@ fun Interface(
             longitude = locationAct.longitude.collectAsState().value
         )
         Spacer(modifier = Modifier.height(16.dp))
-        // Button to start receiving location and sending data
+        CellInfo(
+            cellId = cellInfoAct.cellId.collectAsState().value,
+            lac = cellInfoAct.lac.collectAsState().value,
+            rsrp = cellInfoAct.rsrp.collectAsState().value,
+            cellType = cellInfoAct.cellType.collectAsState().value
+        )
+        Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = {
             locationAct.getLocation()
+            cellInfoAct.getCellInfo()
             if (!isSending) {
                 startSendingData()
             }
         }) {
-            Text(text = "Start Sending Coordinates")
+            Text(text = "Start Sending Data")
         }
     }
 }
@@ -103,5 +114,18 @@ fun LocationInfo(latitude: Double?, longitude: Double?) {
                 Text(text = longitude?.toString() ?: "0", color = Color.Black)
             }
         }
+    }
+}
+
+@Composable
+fun CellInfo(cellId: Int?, lac: Int?, rsrp: Int?, cellType: String?) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = "Cell Info", color = Color.White)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "Cell ID: $cellId", color = Color.White)
+        Text(text = "LAC: $lac", color = Color.White)
+        Text(text = "RSRP: $rsrp", color = Color.White)
+        Text(text = "Cell Type: $cellType", color = Color.White)
+
     }
 }
