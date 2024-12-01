@@ -18,34 +18,24 @@ import com.google.android.gms.location.LocationServices
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Scaffold
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Alignment
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import com.example.test.map.MapViewComposable
 import androidx.compose.runtime.collectAsState
 import org.osmdroid.config.Configuration
 
-@Composable
-fun MapScreen(locationAct: LocationAct, context: Context) {
-    val latitude = locationAct.latitude.collectAsState().value
-    val longitude = locationAct.longitude.collectAsState().value
 
-    MapViewComposable(context = context, latitude = latitude, longitude = longitude)
-}
 
 class MainActivity : ComponentActivity() {
     private lateinit var locationAct: LocationAct
     private lateinit var webSocketAct: WebSocketAct
+    private lateinit var cellInfoAct: CellInfoAct
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,6 +45,7 @@ class MainActivity : ComponentActivity() {
         // Needed to get last known location
         locationAct = LocationAct(this, LocationServices.getFusedLocationProviderClient(this))
         webSocketAct = WebSocketAct(this)
+        cellInfoAct = CellInfoAct(this)
 
         // Request permissions to access geolocation
         val requestPermissionLauncher =
@@ -115,4 +106,13 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    @Composable
+    fun MapScreen(locationAct: LocationAct, context: Context) {
+        val latitude = locationAct.latitude.collectAsState().value
+        val longitude = locationAct.longitude.collectAsState().value
+        val rsrp = cellInfoAct.getRsrp()
+
+        MapViewComposable(context = context, latitude = latitude, longitude = longitude, rsrp = rsrp)
+    }
 }
+
