@@ -1,8 +1,10 @@
 package com.example.test
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.preference.PreferenceManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,6 +30,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import com.example.test.map.MapViewComposable
+import androidx.compose.runtime.collectAsState
+import org.osmdroid.config.Configuration
+
+@Composable
+fun MapScreen(locationAct: LocationAct, context: Context) {
+    val latitude = locationAct.latitude.collectAsState().value
+    val longitude = locationAct.longitude.collectAsState().value
+
+    MapViewComposable(context = context, latitude = latitude, longitude = longitude)
+}
 
 class MainActivity : ComponentActivity() {
     private lateinit var locationAct: LocationAct
@@ -36,6 +50,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this))
 
         // Needed to get last known location
         locationAct = LocationAct(this, LocationServices.getFusedLocationProviderClient(this))
@@ -75,7 +90,7 @@ class MainActivity : ComponentActivity() {
                             NavigationBarItem(
                                 icon = { Icon(Icons.Filled.Home, contentDescription = null) },
                                 selected = false, // Пока нет логики выбора вкладки
-                                onClick = { navController.navigate("hello") }
+                                onClick = { navController.navigate("map") }
                             )
                         }
                     }
@@ -92,14 +107,8 @@ class MainActivity : ComponentActivity() {
                                 lifecycleOwner = this@MainActivity
                             )
                         }
-                        composable("hello") {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.Center,
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(text = "Hello World!")
-                            }
+                        composable("map") {
+                            MapScreen(locationAct = locationAct, context = this@MainActivity)
                         }
                     }
                 }
