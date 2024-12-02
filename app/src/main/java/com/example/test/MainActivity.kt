@@ -30,13 +30,10 @@ import com.example.test.map.MapViewComposable
 import androidx.compose.runtime.collectAsState
 import org.osmdroid.config.Configuration
 
-
-
 class MainActivity : ComponentActivity() {
     private lateinit var locationAct: LocationAct
     private lateinit var webSocketAct: WebSocketAct
     private lateinit var cellInfoAct: CellInfoAct
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,12 +72,12 @@ class MainActivity : ComponentActivity() {
                         NavigationBar {
                             NavigationBarItem(
                                 icon = { Icon(Icons.Filled.LocationOn, contentDescription = null) },
-                                selected = false, // Пока нет логики выбора вкладки
+                                selected = false,
                                 onClick = { navController.navigate("location") }
                             )
                             NavigationBarItem(
                                 icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-                                selected = false, // Пока нет логики выбора вкладки
+                                selected = false,
                                 onClick = { navController.navigate("map") }
                             )
                         }

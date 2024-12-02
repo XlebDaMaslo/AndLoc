@@ -1,4 +1,3 @@
-// CellInfoAct.kt
 package com.example.test
 
 import android.annotation.SuppressLint

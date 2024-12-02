@@ -64,18 +64,14 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
                 .background(mapRsrpToColor(rsrp)))
         }
     }
-
-
 }
 
 fun mapRsrpToRadius(rsrp: Int): Dp {
-    //  Масштабирование радиуса круга в зависимости от RSRP.  Подберите значения по своему усмотрению.
     return (100 - rsrp / 2).dp.coerceAtLeast(10.dp)
 }
 
 
 fun mapRsrpToColor(rsrp: Int): Color {
-    // Масштабирование цвета круга в зависимости от RSRP. Подберите значения по своему усмотрению
     val red = (255 * rsrp / 100.0).coerceAtMost(255.0).toInt()
     val green = (255 * (100 - rsrp) / 100.0).coerceAtMost(255.0).toInt()
     return Color(red, green, 0)
