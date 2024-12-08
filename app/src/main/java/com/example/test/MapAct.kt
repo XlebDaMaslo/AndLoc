@@ -26,6 +26,7 @@ data class SignalPoint(val latitude: Double, val longitude: Double, val rsrp: In
 fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, rsrp: Int?) {
     val mapView = remember { MapView(context) }
     val signalPoints = remember { mutableStateListOf<SignalPoint>() }
+    val maxPoints = 10
     var isInitialSetup by remember { mutableStateOf(true) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -60,9 +61,11 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
             }
 
             if (latitude != null && longitude != null && rsrp != null) {
-                signalPoints.add(SignalPoint(latitude, longitude, rsrp))
+                signalPoints.add(0, SignalPoint(latitude, longitude, rsrp)) // Добавляем в начало
+                if (signalPoints.size > maxPoints) {
+                    signalPoints.removeLast() // Удаляем лишние точки
+                }
             }
-
 
             signalPoints.forEach { point ->
                 val exists = mapView.overlays.any { it is Marker && it.title == "Signal Strength: ${point.rsrp}" }
@@ -73,6 +76,7 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
                     marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     marker.title = "Signal Strength: ${point.rsrp}" // Используем title для идентификации маркеров
                     mapView.overlays.add(marker)
+                    // marker.isFlat = true // не помогает
                 }
             }
 
@@ -117,3 +121,4 @@ fun mapRsrpToDrawable(context: Context, rsrp: Int): android.graphics.drawable.Dr
     }
     return shapeDrawable
 }
+

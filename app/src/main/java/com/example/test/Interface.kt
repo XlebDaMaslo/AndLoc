@@ -26,6 +26,16 @@ fun Interface(
 ) {
     var isSending by remember { mutableStateOf(false) }
 
+    LaunchedEffect(isSending) {
+        if (isSending) {
+            while (isSending) {
+                locationAct.getLocation()
+                webSocketAct.sendLocationData(locationAct)
+                delay(5000)
+            }
+        }
+    }
+
     // Start sending data with a period of 5 seconds
     fun startSendingData() {
         isSending = true
