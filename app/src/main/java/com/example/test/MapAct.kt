@@ -19,6 +19,20 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
+import android.os.Environment
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 data class SignalPoint(val latitude: Double, val longitude: Double, val rsrp: Int)
 
@@ -26,8 +40,11 @@ data class SignalPoint(val latitude: Double, val longitude: Double, val rsrp: In
 fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, rsrp: Int?) {
     val mapView = remember { MapView(context) }
     val signalPoints = remember { mutableStateListOf<SignalPoint>() }
-    val maxPoints = 10
+    val savedSignalPoints = remember { mutableStateListOf<SignalPoint>() }
+    val maxPoints = 128
     var isInitialSetup by remember { mutableStateOf(true) }
+    var showToast by remember { mutableStateOf(false) }
+    var lastLocation by remember { mutableStateOf<Pair<Double?, Double?>>(null to null) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -43,60 +60,84 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = {
-            Configuration.getInstance().userAgentValue = context.packageName
-            mapView.setTileSource(TileSourceFactory.MAPNIK)
-            mapView.controller.setZoom(18.0)
-            mapView.isTilesScaledToDpi = true
-            mapView.controller.setCenter(GeoPoint(latitude ?: 0.0, longitude ?: 0.0)) // Установка начального положения
-            mapView
-        },
-        update = {
-            if (isInitialSetup && latitude != null && longitude != null) {
-                mapView.controller.setCenter(GeoPoint(latitude, longitude))
-                isInitialSetup = false
-            }
-
-            if (latitude != null && longitude != null && rsrp != null) {
-                signalPoints.add(0, SignalPoint(latitude, longitude, rsrp)) // Добавляем в начало
+    LaunchedEffect(latitude, longitude, rsrp) {
+        if (latitude != null && longitude != null && rsrp != null) {
+            val newPoint = SignalPoint(latitude, longitude, rsrp)
+            if(lastLocation != latitude to longitude){
+                signalPoints.add(0, newPoint)
+                lastLocation = latitude to longitude
                 if (signalPoints.size > maxPoints) {
-                    signalPoints.removeLast() // Удаляем лишние точки
+                    signalPoints.removeLast()
                 }
             }
+        }
+    }
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ){
+        AndroidView(
+            modifier = Modifier.weight(1f),
+            factory = {
+                Configuration.getInstance().userAgentValue = context.packageName
+                mapView.setTileSource(TileSourceFactory.MAPNIK)
+                mapView.controller.setZoom(18.0)
+                mapView.isTilesScaledToDpi = true
+                mapView.controller.setCenter(GeoPoint(latitude ?: 0.0, longitude ?: 0.0))
+                mapView
+            },
+            update = {
+                if (isInitialSetup && latitude != null && longitude != null) {
+                    mapView.controller.setCenter(GeoPoint(latitude, longitude))
+                    isInitialSetup = false
+                }
 
-            signalPoints.forEach { point ->
-                val exists = mapView.overlays.any { it is Marker && it.title == "Signal Strength: ${point.rsrp}" }
-                if (!exists) {
+
+                mapView.overlays.removeAll { it is Marker }
+                signalPoints.forEach { point ->
                     val marker = Marker(mapView)
                     marker.position = GeoPoint(point.latitude, point.longitude)
                     marker.icon = mapRsrpToDrawable(context, point.rsrp)
                     marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                    marker.title = "Signal Strength: ${point.rsrp}" // Используем title для идентификации маркеров
+                    marker.title = "Signal Strength: ${point.rsrp}"
                     mapView.overlays.add(marker)
-                    // marker.isFlat = true // не помогает
                 }
+
+                if (latitude != null && longitude != null) {
+                    val geoPoint = GeoPoint(latitude, longitude)
+
+                    val locationMarker = Marker(mapView)
+                    locationMarker.position = geoPoint
+                    locationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    locationMarker.title = "Текущее Положение"
+                    mapView.overlays.add(locationMarker)
+                }
+
+                mapView.invalidate()
             }
-
-            if (latitude != null && longitude != null) {
-                val geoPoint = GeoPoint(latitude, longitude)
-
-                // Удаляем старый маркер местоположения, если он есть
-                mapView.overlays.removeAll { it is Marker && it.title == "Текущее Положение" }
-
-                // Создаем и добавляем маркер текущего местоположения
-                val locationMarker = Marker(mapView)
-                locationMarker.position = geoPoint
-                locationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                locationMarker.title = "Текущее Положение"
-                mapView.overlays.add(locationMarker)
+        )
+        Row(
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ){
+            Button(onClick = {
+                savedSignalPoints.addAll(signalPoints)
+                saveMapDataToFile(savedSignalPoints, context)
+                savedSignalPoints.clear()
+                showToast = true
+            }) {
+                Text(text = "Save map data", fontSize = 18.sp)
             }
-
-            mapView.invalidate()
         }
-    )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (showToast) {
+            androidx.compose.material3.Text("Data saved to file.", color = Color.Green, fontSize = 18.sp)
+            LaunchedEffect(Unit) {
+                delay(3000)
+                showToast = false
+            }
+        }
+    }
 }
 
 fun mapRsrpToRadius(rsrp: Int): Dp {
@@ -115,10 +156,30 @@ fun mapRsrpToDrawable(context: Context, rsrp: Int): android.graphics.drawable.Dr
 
     val oval = OvalShape()
     val shapeDrawable = ShapeDrawable(oval).apply {
-        paint.color = color.toArgb() // Set color of the circle
-        intrinsicWidth = radius.value.toInt() * 2 // Set size dynamically based on RSRP
+        paint.color = color.toArgb()
+        intrinsicWidth = radius.value.toInt() * 2
         intrinsicHeight = radius.value.toInt() * 2
     }
     return shapeDrawable
 }
 
+fun saveMapDataToFile(signalPoints: List<SignalPoint>, context: Context) {
+    if (signalPoints.isEmpty()) return
+
+    val fileName = "map_data.txt"
+    val directory = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "MapData")
+    if (!directory.exists()){
+        directory.mkdirs()
+    }
+    val file = File(directory, fileName)
+
+    try {
+        val writer = FileWriter(file)
+        signalPoints.forEach { point ->
+            writer.append("${point.latitude},${point.longitude},${point.rsrp}\n")
+        }
+        writer.close()
+    } catch (e: IOException) {
+        e.printStackTrace()
+    }
+}

@@ -38,12 +38,14 @@ fun Interface(
 
     // Start sending data with a period of 5 seconds
     fun startSendingData() {
-        isSending = true
-        lifecycleOwner.lifecycleScope.launch {
-            while (isSending) {
-                locationAct.getLocation()
-                webSocketAct.sendLocationData(locationAct)
-                delay(5000)
+        if (!isSending){
+            isSending = true
+            lifecycleOwner.lifecycleScope.launch {
+                while (isSending) {
+                    locationAct.getLocation()
+                    webSocketAct.sendLocationData(locationAct)
+                    delay(5000)
+                }
             }
         }
     }
@@ -62,9 +64,7 @@ fun Interface(
         // Button to start receiving location and sending data
         Button(onClick = {
             locationAct.startLocationUpdates()
-            if (!isSending) {
-                startSendingData()
-            }
+            startSendingData()
         }) {
             Text(text = "Start Sending Coordinates")
         }

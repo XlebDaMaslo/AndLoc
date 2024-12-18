@@ -29,27 +29,17 @@ import androidx.compose.runtime.Composable
 import com.example.test.map.MapViewComposable
 import androidx.compose.runtime.collectAsState
 import org.osmdroid.config.Configuration
+import androidx.compose.runtime.remember
 
 class MainActivity : ComponentActivity() {
-    private lateinit var locationAct: LocationAct
-    private lateinit var webSocketAct: WebSocketAct
-    private lateinit var cellInfoAct: CellInfoAct
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this))
 
-        // Needed to get last known location
-        locationAct = LocationAct(this, LocationServices.getFusedLocationProviderClient(this))
-        webSocketAct = WebSocketAct(this)
-        cellInfoAct = CellInfoAct(this)
-
         // Request permissions to access geolocation
         val requestPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-                if (isGranted) {
-                    locationAct.getLocation()
-                }
             }
 
         // Checking permissions to access precise geolocation
@@ -65,6 +55,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
+            val locationAct = remember {
+                LocationAct(
+                    this,
+                    LocationServices.getFusedLocationProviderClient(this)
+                )
+            }
+            val webSocketAct = remember { WebSocketAct(this) }
+            val cellInfoAct = remember { CellInfoAct(this) }
             TestTheme {
                 val navController = rememberNavController()
                 Scaffold(
@@ -96,7 +94,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("map") {
-                            MapScreen(locationAct = locationAct, context = this@MainActivity)
+                            MapScreen(locationAct = locationAct, context = this@MainActivity, cellInfoAct = cellInfoAct)
                         }
                     }
                 }
@@ -104,7 +102,7 @@ class MainActivity : ComponentActivity() {
         }
     }
     @Composable
-    fun MapScreen(locationAct: LocationAct, context: Context) {
+    fun MapScreen(locationAct: LocationAct, context: Context, cellInfoAct: CellInfoAct) {
         val latitude = locationAct.latitude.collectAsState().value
         val longitude = locationAct.longitude.collectAsState().value
         val rsrp = cellInfoAct.getRsrp()
@@ -112,4 +110,3 @@ class MainActivity : ComponentActivity() {
         MapViewComposable(context = context, latitude = latitude, longitude = longitude, rsrp = rsrp)
     }
 }
-

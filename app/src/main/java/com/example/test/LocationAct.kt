@@ -9,11 +9,14 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
 import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
 class LocationAct(
     private val context: Context,
     private val fusedLocationClient: FusedLocationProviderClient
-) {
+) : ViewModel() {
     val latitude = MutableStateFlow<Double?>(null)
     val longitude = MutableStateFlow<Double?>(null)
 
@@ -58,5 +61,10 @@ class LocationAct(
 
     fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopLocationUpdates()
     }
 }
