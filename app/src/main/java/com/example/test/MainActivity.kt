@@ -30,6 +30,8 @@ import com.example.test.map.MapViewComposable
 import androidx.compose.runtime.collectAsState
 import org.osmdroid.config.Configuration
 import androidx.compose.runtime.remember
+import androidx.compose.material.icons.filled.UploadFile
+import com.example.test.map.MapLoadAct
 
 class MainActivity : ComponentActivity() {
 
@@ -78,6 +80,11 @@ class MainActivity : ComponentActivity() {
                                 selected = false,
                                 onClick = { navController.navigate("map") }
                             )
+                            NavigationBarItem(
+                                icon = { Icon(Icons.Filled.UploadFile, contentDescription = null) },
+                                selected = false,
+                                onClick = { navController.navigate("loadMap") }
+                            )
                         }
                     }
                 ) { innerPadding ->
@@ -95,6 +102,9 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("map") {
                             MapScreen(locationAct = locationAct, context = this@MainActivity, cellInfoAct = cellInfoAct)
+                        }
+                        composable("loadMap") {
+                            MapLoadAct(context = this@MainActivity)
                         }
                     }
                 }
