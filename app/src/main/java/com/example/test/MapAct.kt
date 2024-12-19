@@ -35,7 +35,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 data class SignalPoint(val latitude: Double, val longitude: Double, val rsrp: Int)
 
@@ -92,7 +91,6 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
                 mapView.controller.setCenter(GeoPoint(latitude ?: 0.0, longitude ?: 0.0))
                 mapView.setMultiTouchControls(true)
 
-                // Добавляем слушатель зума и скролла
                 mapView.addMapListener(object : MapListener {
                     override fun onScroll(event: ScrollEvent?): Boolean {
                         return false
@@ -117,18 +115,16 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
                 if (latitude != null && longitude != null) {
                     val geoPoint = GeoPoint(latitude, longitude)
 
-                    // Удаляем старый маркер местоположения, если он есть
                     mapView.overlays.removeAll { it is Marker && it.title == "Текущее Положение" }
 
-                    // Создаем и добавляем маркер текущего местоположения
                     val locationMarker = Marker(mapView)
                     locationMarker.position = geoPoint
                     locationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     locationMarker.title = "Текущее Положение"
+
                     mapView.overlays.add(locationMarker)
                 }
-
-
+                updateMarkersSize(mapView.zoomLevelDouble, mapView, context, signalPoints)
             }
         )
         Row(
@@ -155,7 +151,6 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
     }
 }
 
-
 fun updateMarkersSize(zoomLevel: Double, mapView: MapView, context: Context, signalPoints: List<SignalPoint>) {
     mapView.overlays.removeAll { it is Marker && it.title != "Текущее Положение"}
 
@@ -170,7 +165,6 @@ fun updateMarkersSize(zoomLevel: Double, mapView: MapView, context: Context, sig
         marker.title = "Signal Strength: ${point.rsrp}"
         mapView.overlays.add(marker)
     }
-
 
     mapView.invalidate()
 
@@ -190,16 +184,15 @@ fun mapRsrpToDrawable(context: Context, rsrp: Int, scaleFactor: Double): android
 
     val radius = (baseRadius * scaleFactor).toInt().coerceAtLeast(10)
 
-
     val oval = OvalShape()
     val shapeDrawable = ShapeDrawable(oval).apply {
         paint.color = color.toArgb()
+        paint.alpha = 100
         intrinsicWidth = radius * 2
         intrinsicHeight = radius * 2
     }
     return shapeDrawable
 }
-
 
 fun saveMapDataToFile(signalPoints: List<SignalPoint>, context: Context) {
     if (signalPoints.isEmpty()) return
