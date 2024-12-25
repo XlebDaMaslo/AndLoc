@@ -26,7 +26,10 @@ import java.io.InputStreamReader
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -36,8 +39,7 @@ import org.osmdroid.events.MapListener
 import org.osmdroid.events.ScrollEvent
 import org.osmdroid.events.ZoomEvent
 import androidx.compose.ui.zIndex
-import androidx.compose.ui.unit.LayoutDirection
-import com.example.test.ui.theme.PurpleGrey40
+import androidx.compose.runtime.*
 
 
 @Composable
@@ -75,7 +77,7 @@ fun MapLoadAct(context: Context) {
         Column(modifier = Modifier
             .padding(top = 16.dp, start = 16.dp, end = 16.dp)
             .align(Alignment.TopStart)
-            .background(PurpleGrey40.copy(alpha = 1.0f), shape = RoundedCornerShape(16.dp))
+            .background(Color(0xFFB0BEC5).copy(alpha = 1.0f), shape = RoundedCornerShape(16.dp))
         )
         {
             Row(
@@ -138,7 +140,21 @@ fun loadMapDataFromFile(context: Context, uri: Uri, signalPoints: MutableList<Si
 @Composable
 fun LoadedMapViewComposable(context: Context, signalPoints: List<SignalPoint>) {
     val mapView = remember { MapView(context) }
+    val lifecycleOwner = LocalLifecycleOwner.current
 
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                mapView.onResume()
+            } else if (event == Lifecycle.Event.ON_PAUSE) {
+                mapView.onPause()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = {
@@ -150,6 +166,7 @@ fun LoadedMapViewComposable(context: Context, signalPoints: List<SignalPoint>) {
                 val firstPoint = signalPoints.first()
                 mapView.controller.setCenter(GeoPoint(firstPoint.latitude, firstPoint.longitude))
             }
+            mapView.setMultiTouchControls(true)
             mapView.addMapListener(object : MapListener {
                 override fun onScroll(event: ScrollEvent?): Boolean {
                     return false
@@ -206,6 +223,7 @@ fun mapRsrpToDrawableLoad(context: Context, rsrp: Int, scaleFactor: Double): and
     val oval = OvalShape()
     val shapeDrawable = ShapeDrawable(oval).apply {
         paint.color = color.toArgb()
+        paint.alpha = 100
         intrinsicWidth = radius * 2
         intrinsicHeight = radius * 2
     }
