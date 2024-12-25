@@ -8,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -34,12 +33,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.sp
+import com.example.test.network.WebSocketAct
 import kotlinx.coroutines.delay
+import kotlin.math.pow
 
 data class SignalPoint(val latitude: Double, val longitude: Double, val rsrp: Int)
 
 @Composable
-fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, rsrp: Int?) {
+fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, rsrp: Int?, webSocketAct: WebSocketAct) {
     val mapView = remember { MapView(context) }
     val signalPoints = remember { mutableStateListOf<SignalPoint>() }
     val savedSignalPoints = remember { mutableStateListOf<SignalPoint>() }
@@ -49,7 +50,7 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
     var lastLocation by remember { mutableStateOf<Pair<Double?, Double?>>(null to null) }
     //  val locationMarker = remember { Marker(mapView) }
 
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -98,7 +99,7 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
 
                     override fun onZoom(event: ZoomEvent?): Boolean {
                         event?.let {
-                            updateMarkersSize(mapView.zoomLevelDouble, mapView, context, signalPoints)
+                            updateMarkersSize(mapView.zoomLevelDouble, mapView, signalPoints)
                         }
                         return true
                     }
@@ -111,7 +112,7 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
                     mapView.controller.setCenter(GeoPoint(latitude, longitude))
                     isInitialSetup = false
                 }
-                updateMarkersSize(mapView.zoomLevelDouble, mapView, context, signalPoints)
+                updateMarkersSize(mapView.zoomLevelDouble, mapView, signalPoints)
                 if (latitude != null && longitude != null) {
                     val geoPoint = GeoPoint(latitude, longitude)
 
@@ -124,7 +125,7 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
 
                     mapView.overlays.add(locationMarker)
                 }
-                updateMarkersSize(mapView.zoomLevelDouble, mapView, context, signalPoints)
+                updateMarkersSize(mapView.zoomLevelDouble, mapView, signalPoints)
             }
         )
         Row(
@@ -132,9 +133,10 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
         ){
             Button(onClick = {
                 savedSignalPoints.addAll(signalPoints)
-                saveMapDataToFile(savedSignalPoints, context)
+                saveMapDataToFile(savedSignalPoints)
                 savedSignalPoints.clear()
                 showToast = true
+                webSocketAct.sendMapData()
             }) {
                 Text(text = "Save map data", fontSize = 18.sp)
             }
@@ -142,7 +144,7 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
         Spacer(modifier = Modifier.height(16.dp))
 
         if (showToast) {
-            androidx.compose.material3.Text("Data saved to file.", color = Color.Green, fontSize = 18.sp)
+            Text("Data saved to file.", color = Color.Green, fontSize = 18.sp)
             LaunchedEffect(Unit) {
                 delay(3000)
                 showToast = false
@@ -151,15 +153,15 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
     }
 }
 
-fun updateMarkersSize(zoomLevel: Double, mapView: MapView, context: Context, signalPoints: List<SignalPoint>) {
+fun updateMarkersSize(zoomLevel: Double, mapView: MapView, signalPoints: List<SignalPoint>) {
     mapView.overlays.removeAll { it is Marker && it.title != "Текущее Положение"}
 
     signalPoints.forEach { point ->
         val marker = Marker(mapView)
         marker.position = GeoPoint(point.latitude, point.longitude)
 
-        val scaleFactor = Math.pow(2.0, zoomLevel - 20)
-        marker.icon = mapRsrpToDrawable(context, point.rsrp, scaleFactor)
+        val scaleFactor = 2.0.pow(zoomLevel - 20)
+        marker.icon = mapRsrpToDrawable(point.rsrp, scaleFactor)
 
         marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
         marker.title = "Signal Strength: ${point.rsrp}"
@@ -178,7 +180,7 @@ fun mapRsrpToColor(rsrp: Int): Color {
     val green = (255 * (100 - rsrp) / 100.0).coerceAtMost(255.0).toInt()
     return Color(red, green, 0)
 }
-fun mapRsrpToDrawable(context: Context, rsrp: Int, scaleFactor: Double): android.graphics.drawable.Drawable {
+fun mapRsrpToDrawable(rsrp: Int, scaleFactor: Double): android.graphics.drawable.Drawable {
     val color = mapRsrpToColor(rsrp)
     val baseRadius = mapRsrpToRadius(rsrp).value.toInt()
 
@@ -194,7 +196,7 @@ fun mapRsrpToDrawable(context: Context, rsrp: Int, scaleFactor: Double): android
     return shapeDrawable
 }
 
-fun saveMapDataToFile(signalPoints: List<SignalPoint>, context: Context) {
+fun saveMapDataToFile(signalPoints: List<SignalPoint>) {
     if (signalPoints.isEmpty()) return
 
     val fileName = "map_data.txt"

@@ -5,7 +5,7 @@ import android.content.Context
 import android.telephony.CellInfoLte
 import android.telephony.TelephonyManager
 
-class CellInfoAct(private val context: Context) {
+class CellInfoAct(context: Context) {
 
     private val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
 

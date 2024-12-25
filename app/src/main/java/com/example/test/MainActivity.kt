@@ -4,7 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
 
         // Request permissions to access geolocation
         val requestPermissionLauncher =
-            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { _: Boolean ->
             }
 
         // Checking permissions to access precise geolocation
@@ -101,7 +101,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("map") {
-                            MapScreen(locationAct = locationAct, context = this@MainActivity, cellInfoAct = cellInfoAct)
+                            MapScreen(locationAct = locationAct, context = this@MainActivity, cellInfoAct = cellInfoAct, webSocketAct = webSocketAct) // Pass webSocketAct
                         }
                         composable("loadMap") {
                             MapLoadAct(context = this@MainActivity)
@@ -112,11 +112,11 @@ class MainActivity : ComponentActivity() {
         }
     }
     @Composable
-    fun MapScreen(locationAct: LocationAct, context: Context, cellInfoAct: CellInfoAct) {
+    fun MapScreen(locationAct: LocationAct, context: Context, cellInfoAct: CellInfoAct, webSocketAct: WebSocketAct) { // Receive webSocketAct
         val latitude = locationAct.latitude.collectAsState().value
         val longitude = locationAct.longitude.collectAsState().value
         val rsrp = cellInfoAct.getRsrp()
 
-        MapViewComposable(context = context, latitude = latitude, longitude = longitude, rsrp = rsrp)
+        MapViewComposable(context = context, latitude = latitude, longitude = longitude, rsrp = rsrp, webSocketAct = webSocketAct) // Pass webSocketAct
     }
 }

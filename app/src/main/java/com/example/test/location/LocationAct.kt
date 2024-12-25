@@ -1,7 +1,10 @@
+@file:Suppress("DEPRECATION")
+
 package com.example.test.location
 
 import android.content.Context
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -12,7 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.lifecycle.ViewModel
 
 class LocationAct(
-    private val context: Context,
+    @SuppressLint("StaticFieldLeak") private val context: Context,
     private val fusedLocationClient: FusedLocationProviderClient
 ) : ViewModel() {
     val latitude = MutableStateFlow<Double?>(null)
@@ -57,7 +60,7 @@ class LocationAct(
         }
     }
 
-    fun stopLocationUpdates() {
+    private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 

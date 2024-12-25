@@ -26,7 +26,6 @@ import java.io.InputStreamReader
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -40,6 +39,7 @@ import org.osmdroid.events.ScrollEvent
 import org.osmdroid.events.ZoomEvent
 import androidx.compose.ui.zIndex
 import androidx.compose.runtime.*
+import kotlin.math.pow
 
 
 @Composable
@@ -47,8 +47,8 @@ fun MapLoadAct(context: Context) {
     var fileUri by remember { mutableStateOf<Uri?>(null) }
     val allSignalPoints = remember { mutableStateListOf<SignalPoint>() }
     var showMap by remember { mutableStateOf(false) }
-    var displayedMarkersCount by remember { mutableStateOf(0) }
-    var currentMarkerIndex by remember { mutableStateOf(0)}
+    var displayedMarkersCount by remember { mutableIntStateOf(0) }
+    var currentMarkerIndex by remember { mutableIntStateOf(0) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -140,7 +140,7 @@ fun loadMapDataFromFile(context: Context, uri: Uri, signalPoints: MutableList<Si
 @Composable
 fun LoadedMapViewComposable(context: Context, signalPoints: List<SignalPoint>) {
     val mapView = remember { MapView(context) }
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -174,7 +174,7 @@ fun LoadedMapViewComposable(context: Context, signalPoints: List<SignalPoint>) {
 
                 override fun onZoom(event: ZoomEvent?): Boolean {
                     event?.let {
-                        updateMarkersSizeLoad(mapView.zoomLevelDouble, mapView, context, signalPoints)
+                        updateMarkersSizeLoad(mapView.zoomLevelDouble, mapView, signalPoints)
                     }
                     return true
                 }
@@ -182,20 +182,20 @@ fun LoadedMapViewComposable(context: Context, signalPoints: List<SignalPoint>) {
             mapView
         },
         update = {
-            updateMarkersSizeLoad(mapView.zoomLevelDouble, mapView, context, signalPoints)
+            updateMarkersSizeLoad(mapView.zoomLevelDouble, mapView, signalPoints)
         }
     )
 }
 
-fun updateMarkersSizeLoad(zoomLevel: Double, mapView: MapView, context: Context, signalPoints: List<SignalPoint>) {
+fun updateMarkersSizeLoad(zoomLevel: Double, mapView: MapView, signalPoints: List<SignalPoint>) {
     mapView.overlays.removeAll { it is Marker }
 
     signalPoints.forEach { point ->
         val marker = Marker(mapView)
         marker.position = GeoPoint(point.latitude, point.longitude)
 
-        val scaleFactor = Math.pow(2.0, zoomLevel - 20)
-        marker.icon = mapRsrpToDrawableLoad(context, point.rsrp, scaleFactor)
+        val scaleFactor = 2.0.pow(zoomLevel - 20)
+        marker.icon = mapRsrpToDrawableLoad(point.rsrp, scaleFactor)
 
         marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
         marker.title = "Signal Strength: ${point.rsrp}"
@@ -215,7 +215,7 @@ fun mapRsrpToColorLoad(rsrp: Int): Color {
     return Color(red, green, 0)
 }
 
-fun mapRsrpToDrawableLoad(context: Context, rsrp: Int, scaleFactor: Double): android.graphics.drawable.Drawable {
+fun mapRsrpToDrawableLoad(rsrp: Int, scaleFactor: Double): android.graphics.drawable.Drawable {
     val color = mapRsrpToColorLoad(rsrp)
     val baseRadius = mapRsrpToRadiusLoad(rsrp).value.toInt()
     val radius = (baseRadius * scaleFactor).toInt().coerceAtLeast(10)

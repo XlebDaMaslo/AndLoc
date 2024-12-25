@@ -25,16 +25,7 @@ fun Interface(
     lifecycleOwner: LifecycleOwner
 ) {
     var isSending by remember { mutableStateOf(false) }
-
-    LaunchedEffect(isSending) {
-        if (isSending) {
-            while (isSending) {
-                locationAct.getLocation()
-                webSocketAct.sendLocationData(locationAct)
-                delay(5000)
-            }
-        }
-    }
+    rememberCoroutineScope()
 
     // Start sending data with a period of 5 seconds
     fun startSendingData() {
@@ -47,6 +38,8 @@ fun Interface(
                     delay(5000)
                 }
             }
+        } else {
+            isSending = false
         }
     }
 
@@ -66,11 +59,10 @@ fun Interface(
             locationAct.startLocationUpdates()
             startSendingData()
         }) {
-            Text(text = "Start Sending Coordinates")
+            Text(text = if(isSending) "Stop Sending Coordinates" else "Start Sending Coordinates")
         }
     }
 }
-
 @Composable
 fun LocationInfo(latitude: Double?, longitude: Double?) {
     // Row to display latitude and longitude
