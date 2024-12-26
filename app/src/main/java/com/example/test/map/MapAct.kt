@@ -72,7 +72,6 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
                 if (signalPoints.size > maxPoints) {
                     signalPoints.removeLast()
                 }
-                // Отправляем данные сразу после добавления маркера
                 webSocketAct.sendMapData(newPoint)
             }
         }
@@ -103,7 +102,6 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
                         return true
                     }
                 })
-
                 mapView
             },
             update = {
@@ -115,13 +113,11 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
 
                 if (latitude != null && longitude != null) {
                     val geoPoint = GeoPoint(latitude, longitude)
-                    // Удаляем старый маркер положения
                     mapView.overlays.removeAll { it is Marker && it.title == "Текущее Положение" }
                     val locationMarker = Marker(mapView)
                     locationMarker.position = geoPoint
                     locationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     locationMarker.title = "Текущее Положение"
-                    //Добавляем маркер в конец
                     mapView.overlays.add(locationMarker)
                 }
                 updateMarkersSize(mapView.zoomLevelDouble, mapView, signalPoints)
@@ -133,7 +129,6 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
             Button(onClick = {
                 savedSignalPoints.addAll(signalPoints)
                 saveMapDataToFile(savedSignalPoints)
-                // Убираем очистку списка
                 showToast = true
 
             }) {
@@ -153,12 +148,9 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
 }
 
 fun updateMarkersSize(zoomLevel: Double, mapView: MapView, signalPoints: List<SignalPoint>) {
-    // Получаем текущий список, фильтруя маркер текущего положения
     val currentOverlays = mapView.overlays.filter { it !is Marker || it.title != "Текущее Положение" }
-    // Удаляем старые маркеры силы сигнала
     mapView.overlays.removeAll(currentOverlays)
 
-    // Добавляем новые маркеры силы сигнала в начало
     signalPoints.forEach { point ->
         val marker = Marker(mapView)
         marker.position = GeoPoint(point.latitude, point.longitude)
