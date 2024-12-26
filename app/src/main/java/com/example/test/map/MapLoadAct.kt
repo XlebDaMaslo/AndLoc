@@ -223,7 +223,7 @@ fun mapRsrpToDrawableLoad(rsrp: Int, scaleFactor: Double): android.graphics.draw
     val oval = OvalShape()
     val shapeDrawable = ShapeDrawable(oval).apply {
         paint.color = color.toArgb()
-        paint.alpha = 100
+        paint.alpha = 50
         intrinsicWidth = radius * 2
         intrinsicHeight = radius * 2
     }

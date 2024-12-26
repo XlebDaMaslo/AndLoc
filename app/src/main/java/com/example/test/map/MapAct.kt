@@ -48,8 +48,6 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
     var isInitialSetup by remember { mutableStateOf(true) }
     var showToast by remember { mutableStateOf(false) }
     var lastLocation by remember { mutableStateOf<Pair<Double?, Double?>>(null to null) }
-    //  val locationMarker = remember { Marker(mapView) }
-
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -74,10 +72,11 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
                 if (signalPoints.size > maxPoints) {
                     signalPoints.removeLast()
                 }
+                // Отправляем данные сразу после добавления маркера
+                webSocketAct.sendMapData(newPoint)
             }
         }
     }
-
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -112,17 +111,17 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
                     mapView.controller.setCenter(GeoPoint(latitude, longitude))
                     isInitialSetup = false
                 }
-                updateMarkersSize(mapView.zoomLevelDouble, mapView, signalPoints)
+
+
                 if (latitude != null && longitude != null) {
                     val geoPoint = GeoPoint(latitude, longitude)
-
+                    // Удаляем старый маркер положения
                     mapView.overlays.removeAll { it is Marker && it.title == "Текущее Положение" }
-
                     val locationMarker = Marker(mapView)
                     locationMarker.position = geoPoint
                     locationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     locationMarker.title = "Текущее Положение"
-
+                    //Добавляем маркер в конец
                     mapView.overlays.add(locationMarker)
                 }
                 updateMarkersSize(mapView.zoomLevelDouble, mapView, signalPoints)
@@ -134,9 +133,9 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
             Button(onClick = {
                 savedSignalPoints.addAll(signalPoints)
                 saveMapDataToFile(savedSignalPoints)
-                savedSignalPoints.clear()
+                // Убираем очистку списка
                 showToast = true
-                webSocketAct.sendMapData()
+
             }) {
                 Text(text = "Save map data", fontSize = 18.sp)
             }
@@ -154,8 +153,12 @@ fun MapViewComposable(context: Context, latitude: Double?, longitude: Double?, r
 }
 
 fun updateMarkersSize(zoomLevel: Double, mapView: MapView, signalPoints: List<SignalPoint>) {
-    mapView.overlays.removeAll { it is Marker && it.title != "Текущее Положение"}
+    // Получаем текущий список, фильтруя маркер текущего положения
+    val currentOverlays = mapView.overlays.filter { it !is Marker || it.title != "Текущее Положение" }
+    // Удаляем старые маркеры силы сигнала
+    mapView.overlays.removeAll(currentOverlays)
 
+    // Добавляем новые маркеры силы сигнала в начало
     signalPoints.forEach { point ->
         val marker = Marker(mapView)
         marker.position = GeoPoint(point.latitude, point.longitude)
@@ -165,7 +168,7 @@ fun updateMarkersSize(zoomLevel: Double, mapView: MapView, signalPoints: List<Si
 
         marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
         marker.title = "Signal Strength: ${point.rsrp}"
-        mapView.overlays.add(marker)
+        mapView.overlays.add(0, marker)
     }
 
     mapView.invalidate()
@@ -189,7 +192,7 @@ fun mapRsrpToDrawable(rsrp: Int, scaleFactor: Double): android.graphics.drawable
     val oval = OvalShape()
     val shapeDrawable = ShapeDrawable(oval).apply {
         paint.color = color.toArgb()
-        paint.alpha = 100
+        paint.alpha = 50
         intrinsicWidth = radius * 2
         intrinsicHeight = radius * 2
     }

@@ -34,7 +34,7 @@ fun Interface(
             lifecycleOwner.lifecycleScope.launch {
                 while (isSending) {
                     locationAct.getLocation()
-                    webSocketAct.sendLocationData(locationAct)
+                        //webSocketAct.sendLocationData(locationAct)
                     delay(5000)
                 }
             }

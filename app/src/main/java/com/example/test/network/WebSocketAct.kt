@@ -5,17 +5,17 @@ import okhttp3.*
 import okio.ByteString
 import com.example.test.location.LocationAct
 import com.example.test.CellInfoAct
-import java.io.File
 import java.io.IOException
-import android.os.Environment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import android.util.Log
+import com.example.test.map.SignalPoint
+import org.json.JSONObject
 
 class WebSocketAct(context: Context) {
     private val client = OkHttpClient()
-    private val request = Request.Builder().url("ws://s2zbb1-2a01-620-c18f-c101-811b-cde1-3385-31bd.ru.tuna.am").build()
+    private val request = Request.Builder().url("ws://192.168.0.12:8000/ws").build()
     private var webSocket: WebSocket? = null
     private val cellInfoAct = CellInfoAct(context)
 
@@ -56,33 +56,17 @@ class WebSocketAct(context: Context) {
         }
     }
 
-    fun sendMapData() {
-        CoroutineScope(Dispatchers.IO).launch {
-            val fileContent = readMapDataFromFile()
-            fileContent?.let {
-                Log.d("WebSocketAct", "Sending map data: $it")
-                webSocket?.send(it)
-            }
-        }
+    fun sendMapData(signalPoint: SignalPoint) {
+        val jsonData = mapToJson(signalPoint)
+        Log.d("WebSocketAct", "Sending map data: $jsonData")
+        webSocket?.send(jsonData)
     }
 
-
-    private fun readMapDataFromFile(): String? {
-        val fileName = "map_data.txt"
-        val directory = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "MapData")
-        val file = File(directory, fileName)
-
-        return try {
-            if (file.exists()) {
-                file.readText()
-            } else {
-                Log.d("WebSocketAct", "File not found")
-                null
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-            Log.e("WebSocketAct", "Error reading file: ${e.message}")
-            null
-        }
+    private fun mapToJson(signalPoint: SignalPoint): String {
+        val jsonObject = JSONObject()
+        jsonObject.put("latitude", signalPoint.latitude)
+        jsonObject.put("longitude", signalPoint.longitude)
+        jsonObject.put("rsrp", signalPoint.rsrp)
+        return jsonObject.toString()
     }
 }
